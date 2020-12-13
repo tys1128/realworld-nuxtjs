@@ -56,6 +56,7 @@
 
 <script>
 import { login, register } from "@/api/user";
+const Cookie  = process.client ? require('js-cookie') : undefined
 
 export default {
   name: "LoginIndex",
@@ -85,7 +86,10 @@ export default {
               user: this.user,
             });
 
-        console.log(data);
+        // console.log(data);
+        this.$store.commit('setUser', data.user)
+
+        Cookie.set('user', data.user)
 
         this.$router.push("/");
       } catch (error) {
