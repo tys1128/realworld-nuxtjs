@@ -57,15 +57,17 @@
                 <i class="ion-heart"></i> {{ article.favoritesCount }}
               </button>
             </div>
-            <nuxt-link :to="{
+            <nuxt-link
+              :to="{
                 name: 'article',
-                
                 params: {
-                  slug: article.slug
-                }
-              }" class="preview-link">
-              <h1>{{article.title}}</h1>
-              <p>{{article.description}}</p>
+                  slug: article.slug,
+                },
+              }"
+              class="preview-link"
+            >
+              <h1>{{ article.title }}</h1>
+              <p>{{ article.description }}</p>
               <span>Read more...</span>
             </nuxt-link>
           </div>
@@ -76,17 +78,46 @@
             <p>Popular Tags</p>
 
             <div class="tag-list">
-              <a href="" class="tag-pill tag-default">programming</a>
-              <a href="" class="tag-pill tag-default">javascript</a>
-              <a href="" class="tag-pill tag-default">emberjs</a>
-              <a href="" class="tag-pill tag-default">angularjs</a>
-              <a href="" class="tag-pill tag-default">react</a>
-              <a href="" class="tag-pill tag-default">mean</a>
-              <a href="" class="tag-pill tag-default">node</a>
-              <a href="" class="tag-pill tag-default">rails</a>
+              <nuxt-link
+                v-for="item in tags"
+                :key="item"
+                :to="{
+                  name: 'home',
+                  query: {
+                    tag: item,
+                  },
+                }"
+                class="tag-pill tag-default"
+                >{{ item }}</nuxt-link
+              >
             </div>
           </div>
         </div>
+
+        <nav>
+          <ul class="pagination">
+            <li
+              class="page-item"
+              v-for="item in totalPage"
+              :class="{
+                active: item === page,
+              }"
+              :key="item"
+            >
+              <nuxt-link
+                class="page-link"
+                :to="{
+                  name: 'home',
+                  query: {
+                    page: item,
+                    tag: $route.query.tag,
+                  },
+                }"
+                >{{ item }}</nuxt-link
+              >
+            </li>
+          </ul>
+        </nav>
       </div>
     </div>
   </div>
@@ -94,12 +125,39 @@
 
 <script>
 import { getArticles } from "@/api/article";
+import { getTags } from "@/api/tag";
 
 export default {
   name: "HomeIndex",
-  async asyncData() {
-    const { data } = await getArticles();
-    return data;
+  async asyncData({ query }) {
+    let page = Number.parseInt(query.page || 1);
+    let limit = Number.parseInt(query.limit || 10);
+
+    const [articleRes, tagRes] = await Promise.all([
+      getArticles({
+        limit,
+        offset: (page - 1) * limit,
+        tag: query.tag,
+      }),
+      getTags(),
+    ]);
+
+    const { articles, articlesCount } = articleRes.data;
+    const { tags } = tagRes.data;
+
+    return {
+      articles,
+      articlesCount,
+      tags,
+      limit,
+      page,
+    };
+  },
+  watchQuery: ["page", 'tag'],
+  computed: {
+    totalPage() {
+      return Math.ceil(this.articlesCount / this.limit);
+    },
   },
 };
 </script>
